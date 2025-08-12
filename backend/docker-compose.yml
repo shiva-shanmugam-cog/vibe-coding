@@ -62,19 +62,23 @@ services:
       - "8080:8080"
 
   # Optional: run agents as separate services instead of in-process
-  # onboarding-agent:
-  #   build:
-  #     context: .
-  #     dockerfile: agents/onboarding-agent/Dockerfile
-  #   ports:
-  #     - "8081:8081"
-  #
-  # fraud-detection-agent:
-  #   build:
-  #     context: .
-  #     dockerfile: agents/fraud-detection-agent/Dockerfile
-  #   ports:
-  #     - "8083:8083"
+  onboarding-agent:
+    build:
+      context: .
+      dockerfile: agents/onboarding-agent/Dockerfile
+    environment:
+      SERVER_PORT: 8081
+    ports:
+      - "8081:8081"
+
+  fraud-detection-agent:
+    build:
+      context: .
+      dockerfile: agents/fraud-detection-agent/Dockerfile
+    environment:
+      SERVER_PORT: 8083
+    ports:
+      - "8083:8083"
 
 volumes:
   pgdata: {} 
