@@ -35,6 +35,18 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.4
+    command: ["start-dev", "--import-realm", "--http-port=8081"]
+    environment:
+      KC_DB: dev-mem
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./../infrastructure/docker/keycloak/realm-demo.json:/opt/keycloak/data/import/realm-demo.json:ro
+    ports:
+      - "8081:8081"
+
   audit-service:
     build:
       context: .
@@ -58,6 +70,7 @@ services:
     depends_on:
       - kafka
       - audit-service
+      - keycloak
     ports:
       - "8080:8080"
 
@@ -77,4 +90,4 @@ services:
   #     - "8083:8083"
 
 volumes:
-  pgdata: {} 
+  pgdata: 
