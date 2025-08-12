@@ -1,0 +1,221 @@
+{
+  "info": {
+    "name": "Vibe Backend - Local Docker",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection to test Agent Gateway and Audit Service running via backend/docker-compose.yml"
+  },
+  "variable": [
+    { "key": "agentGatewayBase", "value": "http://localhost:8080" },
+    { "key": "auditServiceBase", "value": "http://localhost:8082" },
+    { "key": "conversationId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Agent Gateway",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{agentGatewayBase}}/actuator/health",
+              "host": ["{{agentGatewayBase}}"],
+              "path": ["actuator", "health"]
+            }
+          }
+        },
+        {
+          "name": "Metrics Snapshot",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{agentGatewayBase}}/api/agents/metrics",
+              "host": ["{{agentGatewayBase}}"],
+              "path": ["api", "agents", "metrics"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send Message - Fraud (ALLOW)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Conversation-Id", "value": "{{conversationId}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"{{$randomUUID}}\",\n  \"targetAgentId\": \"fraud-detection-engine\",\n  \"actor\": \"customer-123\",\n  \"type\": \"TRANSACTION\",\n  \"payload\": { \"amount\": 250.75, \"currency\": \"USD\" },\n  \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{agentGatewayBase}}/api/agents/message",
+              "host": ["{{agentGatewayBase}}"],
+              "path": ["api", "agents", "message"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('has action ALLOW or APPROVED', function () { var json = pm.response.json(); pm.expect(json).to.be.an('object'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send Message - Fraud (BLOCK)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Conversation-Id", "value": "{{conversationId}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"{{$randomUUID}}\",\n  \"targetAgentId\": \"fraud-detection-engine\",\n  \"actor\": \"customer-123\",\n  \"type\": \"TRANSACTION\",\n  \"payload\": { \"amount\": 15000, \"currency\": \"USD\" },\n  \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{agentGatewayBase}}/api/agents/message",
+              "host": ["{{agentGatewayBase}}"],
+              "path": ["api", "agents", "message"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('likely blocked', function () { var json = pm.response.json(); pm.expect(json).to.be.an('object'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send Message - Onboarding (Open Account)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Conversation-Id", "value": "{{conversationId}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"{{$randomUUID}}\",\n  \"targetAgentId\": \"onboarding-assistant\",\n  \"actor\": \"customer-456\",\n  \"type\": \"CUSTOMER_QUERY\",\n  \"payload\": { \"intent\": \"I want to open account\" },\n  \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{agentGatewayBase}}/api/agents/message",
+              "host": ["{{agentGatewayBase}}"],
+              "path": ["api", "agents", "message"]
+            }
+          }
+        },
+        {
+          "name": "Send Message - Onboarding (Status)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Conversation-Id", "value": "{{conversationId}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"{{$randomUUID}}\",\n  \"targetAgentId\": \"onboarding-assistant\",\n  \"actor\": \"customer-456\",\n  \"type\": \"CUSTOMER_QUERY\",\n  \"payload\": { \"intent\": \"status\" },\n  \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{agentGatewayBase}}/api/agents/message",
+              "host": ["{{agentGatewayBase}}"],
+              "path": ["api", "agents", "message"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit Service",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{auditServiceBase}}/actuator/health",
+              "host": ["{{auditServiceBase}}"],
+              "path": ["actuator", "health"]
+            }
+          }
+        },
+        {
+          "name": "Ingest Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actor\": \"user-1\",\n  \"resource\": \"transaction\",\n  \"action\": \"CREATE\",\n  \"ip\": \"127.0.0.1\",\n  \"userAgent\": \"Postman\",\n  \"payload\": {\n    \"amount\": 123.45,\n    \"currency\": \"USD\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{auditServiceBase}}/api/audit",
+              "host": ["{{auditServiceBase}}"],
+              "path": ["api", "audit"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Events (by actor)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{auditServiceBase}}/api/audit/search?actor=user-1",
+              "host": ["{{auditServiceBase}}"],
+              "path": ["api", "audit", "search"],
+              "query": [
+                { "key": "actor", "value": "user-1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Events (by resource)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{auditServiceBase}}/api/audit/search?resource=transaction",
+              "host": ["{{auditServiceBase}}"],
+              "path": ["api", "audit", "search"],
+              "query": [
+                { "key": "resource", "value": "transaction" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+} 

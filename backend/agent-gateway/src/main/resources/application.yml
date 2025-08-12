@@ -6,6 +6,11 @@ spring:
     name: agent-gateway
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWKS_URI:http://localhost:8081/.well-known/jwks.json}
 
 management:
   endpoints:
@@ -17,13 +22,6 @@ management:
       probes:
         enabled: true
 
-# OAuth2 Resource Server configuration
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${JWKS_URI:http://localhost:8081/.well-known/jwks.json}
 
 security:
   mode: local 

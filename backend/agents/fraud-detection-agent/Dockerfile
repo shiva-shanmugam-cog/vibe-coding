@@ -6,7 +6,12 @@ RUN mvn -q -DskipTests -pl agents/fraud-detection-agent -am package
 
 FROM eclipse-temurin:17-jre
 ENV JAVA_OPTS=""
+# Create non-root user
+RUN groupadd -g 10001 vibe && useradd -u 10001 -g vibe -s /sbin/nologin -m vibe
 WORKDIR /app
+RUN mkdir -p /app && chown -R vibe:vibe /app
 COPY --from=build /app/agents/fraud-detection-agent/target/*-SNAPSHOT.jar /app/app.jar
+RUN chown vibe:vibe /app/app.jar
+USER vibe:vibe
 EXPOSE 8083
 ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"] 
