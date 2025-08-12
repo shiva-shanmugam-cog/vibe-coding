@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: fraud-detection-agent
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info 

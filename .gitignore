@@ -1,0 +1,86 @@
+# ---- OS / Editor ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VS Code
+.vscode/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+.factorypath
+
+# ---- Java / Maven ----
+**/target/
+**/bin/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven wrapper logs
+.mvn/timing.properties
+
+# Test reports / coverage
+**/surefire-reports/
+**/failsafe-reports/
+**/jacoco.exec
+**/jacoco/*.exec
+coverage/
+.nyc_output/
+
+# ---- Spring Boot ----
+# Keep baseline application.yml in repo; ignore local overrides
+**/application-local.yml
+**/application-*.local.yml
+**/application-*.properties.local
+
+# Keystores / secrets
+*.jks
+*.p12
+*.pem
+*.key
+*.crt
+
+# ---- Node / Frontend (if built locally) ----
+**/node_modules/
+**/dist/
+**/build/
+**/.next/
+**/.nuxt/
+**/.cache/
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+**/logs/
+*.log
+*.log.*
+
+# Docker
+*.pid
+**/.docker/
+# Local compose overrides
+**/docker-compose.override.yml
+
+# Misc tools
+.idea_modules/
+.history/
+.tmp/
+.tmp/**
+
+# OneDrive temp files
+~$* 

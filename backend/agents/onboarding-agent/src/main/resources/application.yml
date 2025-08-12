@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: onboarding-agent
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info 
