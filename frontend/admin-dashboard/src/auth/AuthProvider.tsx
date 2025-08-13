@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const manager = useMemo(getOidcManager, []);
   const [user, setUser] = useState<User | null>(null);
   const [demoRoles, setDemoRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState<boolean>(!!manager);
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Initialize authentication state
   useEffect(() => {
