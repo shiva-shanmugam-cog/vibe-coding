@@ -24,6 +24,16 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  kafka-ui:
+    image: obsidiandynamics/kafdrop:2.0.0
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: kafka:9092
+      KAFKA_TOPICFILTER: .*
+      KAFKA_AUTOCREATE: true
+    depends_on:
+      - kafka
   postgres:
     image: postgres:16
     environment:
