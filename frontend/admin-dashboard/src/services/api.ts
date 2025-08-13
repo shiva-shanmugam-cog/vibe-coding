@@ -1,8 +1,11 @@
 import axios from 'axios';
 import { User } from 'oidc-client-ts';
 
-const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-const auditBase = import.meta.env.VITE_AUDIT_BASE_URL || '';
+const defaultGateway = `${window.location.protocol}//${window.location.hostname}:8080`;
+const defaultAudit = `${window.location.protocol}//${window.location.hostname}:8082`;
+
+const apiBase = import.meta.env.VITE_API_BASE_URL || defaultGateway;
+const auditBase = import.meta.env.VITE_AUDIT_BASE_URL || defaultAudit;
 
 export const api = axios.create({ baseURL: apiBase });
 export const auditApi = axios.create({ baseURL: auditBase });
@@ -11,11 +14,26 @@ let currentUser: User | null = null;
 export function setAuthUser(user: User | null) { currentUser = user; }
 
 function bearer() {
-  return currentUser?.access_token ? { Authorization: `Bearer ${currentUser.access_token}` } : {};
+  return currentUser?.access_token ? `Bearer ${currentUser.access_token}` : null;
 }
 
-api.interceptors.request.use(cfg => ({ ...cfg, headers: { ...cfg.headers, ...bearer() } }));
-auditApi.interceptors.request.use(cfg => ({ ...cfg, headers: { ...cfg.headers, ...bearer() } }));
+api.interceptors.request.use(cfg => {
+  const token = bearer();
+  if (token) {
+    cfg.headers = cfg.headers || {};
+    (cfg.headers as any).Authorization = token;
+  }
+  return cfg;
+});
+
+auditApi.interceptors.request.use(cfg => {
+  const token = bearer();
+  if (token) {
+    cfg.headers = cfg.headers || {};
+    (cfg.headers as any).Authorization = token;
+  }
+  return cfg;
+});
 
 export interface AgentMetricItem {
   displayName: string;

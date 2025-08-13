@@ -3,14 +3,17 @@ import { useAuth, Role } from './AuthProvider';
 import React from 'react';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode; allowRoles?: Role[] }> = ({ children, allowRoles }) => {
-  const { isAuthenticated, roles, login } = useAuth();
+  const { isAuthenticated, roles, login, loading } = useAuth();
   const location = useLocation();
 
+  if (loading) {
+    return <div className="p-6">Loading...</div>;
+  }
+
   if (!isAuthenticated) {
-    // If OIDC configured, kick off login
     if (import.meta.env.VITE_OIDC_AUTHORITY) {
       login();
-      return null;
+      return <div className="p-6">Redirecting to login…</div>;
     }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

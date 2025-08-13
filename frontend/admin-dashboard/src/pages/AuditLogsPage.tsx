@@ -7,10 +7,19 @@ export default function AuditLogsPage() {
   const [actor, setActor] = useState('');
   const [resource, setResource] = useState('');
   const [rows, setRows] = useState<AuditEvent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function search() {
-    const res = await auditApi.get('/api/audit/search', { params: { actor: actor || undefined, resource: resource || undefined } });
-    setRows(res.data);
+    setLoading(true); setError(null);
+    try {
+      const res = await auditApi.get('/api/audit/search', { params: { actor: actor || undefined, resource: resource || undefined } });
+      setRows(res.data);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load audit logs');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { search(); }, []);
@@ -24,7 +33,12 @@ export default function AuditLogsPage() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Audit Logs</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Audit Logs</h2>
+        {import.meta.env.VITE_AUDIT_BASE_URL && (
+          <div className="text-xs text-gray-500">{import.meta.env.VITE_AUDIT_BASE_URL}</div>
+        )}
+      </div>
 
       <div className="bg-white border rounded p-3 grid grid-cols-1 md:grid-cols-4 gap-3">
         <div>
@@ -36,10 +50,13 @@ export default function AuditLogsPage() {
           <input className="w-full border rounded px-3 py-2" value={resource} onChange={e => setResource(e.target.value)} />
         </div>
         <div className="flex items-end gap-2">
-          <button className="px-3 py-2 rounded-md bg-brand-600 text-white" onClick={search}>Search</button>
+          <button className="px-3 py-2 rounded-md bg-brand-600 text-white" onClick={search} disabled={loading}>Search</button>
           <a className="px-3 py-2 rounded-md bg-gray-100" download={`audit-${Date.now()}.csv`} href={URL.createObjectURL(csv)}>Export CSV</a>
         </div>
       </div>
+
+      {loading && <div>Loading…</div>}
+      {error && <div className="text-red-600">{error}</div>}
 
       <div className="bg-white border rounded overflow-hidden">
         <table className="min-w-full text-sm">
@@ -53,6 +70,9 @@ export default function AuditLogsPage() {
             </tr>
           </thead>
           <tbody>
+            {rows.length === 0 && !loading && (
+              <tr><td className="px-3 py-4 text-gray-500" colSpan={5}>No results</td></tr>
+            )}
             {rows.map((r, idx) => (
               <tr key={idx} className="border-t">
                 <td className="px-3 py-2">{r.actor}</td>

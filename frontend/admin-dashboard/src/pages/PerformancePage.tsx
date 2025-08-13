@@ -19,6 +19,8 @@ export default function PerformancePage() {
 
   useEffect(() => { load(); const t = setInterval(load, 5000); return () => clearInterval(t); }, []);
 
+  const grafanaUrl = (import.meta.env.VITE_GRAFANA_DASHBOARD_URL as string | undefined) || '';
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Performance</h2>
@@ -32,6 +34,18 @@ export default function PerformancePage() {
           </div>
         ))}
       </div>
+
+      {grafanaUrl && (
+        <div className="bg-white border rounded-lg p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="font-medium">Grafana Dashboard</div>
+            <a href={grafanaUrl} target="_blank" rel="noreferrer" className="text-sm text-brand-700">Open in Grafana</a>
+          </div>
+          <div className="aspect-video w-full">
+            <iframe src={grafanaUrl} className="w-full h-full border-0" title="Grafana" />
+          </div>
+        </div>
+      )}
 
       <div className="bg-white border rounded-lg p-4">
         <div className="font-medium mb-2">CPU Usage</div>

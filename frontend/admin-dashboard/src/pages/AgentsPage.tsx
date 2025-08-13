@@ -1,5 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getAgentsMetrics, sendAgentMessage, AgentMessageReq, AgentsMetrics } from '@/services/api';
+
+const SAMPLE_PAYLOADS: Record<string, { type: string; payload: Record<string, unknown> }> = {
+  'onboarding-assistant': { type: 'CUSTOMER_QUERY', payload: { intent: 'open account' } },
+  'fraud-detection-engine': { type: 'TRANSACTION_CHECK', payload: { amount: 15000, currency: 'USD', merchant: 'ACME' } },
+};
 
 export default function AgentsPage() {
   const [metrics, setMetrics] = useState<AgentsMetrics>({});
@@ -9,21 +14,42 @@ export default function AgentsPage() {
   const [form, setForm] = useState<AgentMessageReq>({ targetAgentId: '', type: 'CUSTOMER_QUERY', payload: { intent: 'open account' } });
   const [conversationId, setConversationId] = useState<string>('');
   const [response, setResponse] = useState<any>(null);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  const refreshTimer = useRef<number | null>(null);
 
   async function load() {
     setLoading(true); setError(null);
     try { setMetrics(await getAgentsMetrics()); } catch (e: any) { setError(e?.message || 'Failed to load'); } finally { setLoading(false); }
   }
 
-  useEffect(() => { load(); const t = setInterval(load, 10000); return () => clearInterval(t); }, []);
+  useEffect(() => { load(); return () => { if (refreshTimer.current) window.clearInterval(refreshTimer.current); }; }, []);
+  useEffect(() => {
+    // Start periodic refresh every 10s after first load
+    if (!refreshTimer.current) {
+      refreshTimer.current = window.setInterval(load, 10000);
+    }
+  }, []);
 
   const agentIds = useMemo(() => Object.keys(metrics || {}), [metrics]);
+
+  useEffect(() => {
+    if (form.targetAgentId && SAMPLE_PAYLOADS[form.targetAgentId]) {
+      const sample = SAMPLE_PAYLOADS[form.targetAgentId];
+      setForm(prev => ({ ...prev, type: sample.type, payload: sample.payload }));
+    }
+  }, [form.targetAgentId]);
+
+  const payloadText = useMemo(() => {
+    try { return JSON.stringify(form.payload || {}, null, 2); } catch { return '{}'; }
+  }, [form.payload]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Agents</h2>
-        <button onClick={load} className="px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200">Refresh</button>
+        <button onClick={load} className="px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200" disabled={loading}>Refresh</button>
       </div>
 
       {loading && <div>Loading...</div>}
@@ -57,6 +83,9 @@ export default function AgentsPage() {
               <option value="">Select agent…</option>
               {agentIds.map(id => <option key={id} value={id}>{id}</option>)}
             </select>
+            {form.targetAgentId && SAMPLE_PAYLOADS[form.targetAgentId] && (
+              <div className="mt-1 text-xs text-gray-500">Sample pre-filled for {form.targetAgentId}</div>
+            )}
           </div>
           <div>
             <label className="block text-sm text-gray-600 mb-1">Type</label>
@@ -67,21 +96,36 @@ export default function AgentsPage() {
             <input className="w-full border rounded-md px-3 py-2" value={conversationId} onChange={e => setConversationId(e.target.value)} />
           </div>
         </div>
+        <div className="flex gap-2 flex-wrap">
+          <button type="button" className="px-2 py-1 text-xs rounded bg-gray-100" onClick={() => setForm(f => ({ ...f, type: SAMPLE_PAYLOADS['onboarding-assistant'].type, payload: SAMPLE_PAYLOADS['onboarding-assistant'].payload }))}>Use Onboarding Sample</button>
+          <button type="button" className="px-2 py-1 text-xs rounded bg-gray-100" onClick={() => setForm(f => ({ ...f, type: SAMPLE_PAYLOADS['fraud-detection-engine'].type, payload: SAMPLE_PAYLOADS['fraud-detection-engine'].payload }))}>Use Fraud Sample</button>
+        </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Payload (JSON)</label>
           <textarea className="w-full border rounded-md px-3 py-2 font-mono text-sm" rows={5}
-            value={JSON.stringify(form.payload || {}, null, 2)}
+            value={payloadText}
             onChange={e => { try { const v = JSON.parse(e.target.value); setForm({ ...form, payload: v }); } catch {} }}
           />
         </div>
         <div className="flex gap-2">
           <button
-            className="px-3 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700"
-            onClick={async () => { const r = await sendAgentMessage(form, conversationId || undefined); setResponse(r); }}
-            disabled={!form.targetAgentId}
-          >Send</button>
+            className="px-3 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50"
+            onClick={async () => {
+              setSending(true); setSendError(null);
+              try {
+                const r = await sendAgentMessage(form, conversationId || undefined);
+                setResponse(r);
+              } catch (e: any) {
+                setSendError(e?.message || 'Failed to send');
+              } finally {
+                setSending(false);
+              }
+            }}
+            disabled={!form.targetAgentId || sending}
+          >{sending ? 'Sending…' : 'Send'}</button>
           <button className="px-3 py-2 rounded-md bg-gray-100" onClick={() => setResponse(null)}>Clear</button>
         </div>
+        {sendError && <div className="text-red-600 text-sm">{sendError}</div>}
         {response && (
           <div>
             <div className="text-sm text-gray-600">Response</div>

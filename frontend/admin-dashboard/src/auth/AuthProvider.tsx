@@ -8,6 +8,7 @@ interface AuthContextShape {
   isAuthenticated: boolean;
   user: User | null;
   roles: Role[];
+  loading: boolean;
   login: () => void;
   logout: () => void;
 }
@@ -30,15 +31,26 @@ function getOidcManager(): UserManager | null {
   });
 }
 
+function toRoleName(raw: string): Role | null {
+  if (!raw) return null;
+  const upper = raw.toUpperCase();
+  const normalized = upper.startsWith('ROLE_') ? upper : `ROLE_${upper}`;
+  if (normalized === 'ROLE_ADMIN' || normalized === 'ROLE_AGENT' || normalized === 'ROLE_CUSTOMER') return normalized as Role;
+  return null;
+}
+
 function extractRoles(user: User | null): Role[] {
   if (!user) return [];
   const token = user.id_token || user.access_token;
   try {
     const payload = JSON.parse(atob((token || '').split('.')[1] || '')) || {};
-    const rolesFromRealm = payload?.realm_access?.roles || [];
-    const rolesFromResource = Object.values(payload?.resource_access || {}).flatMap((r: any) => r?.roles || []);
+    const rolesFromRealm: string[] = payload?.realm_access?.roles || [];
+    const rolesFromResource: string[] = Object.values(payload?.resource_access || {}).flatMap((r: any) => r?.roles || []);
     const all = new Set<string>([...rolesFromRealm, ...rolesFromResource]);
-    return Array.from(all).filter(r => r.startsWith('ROLE_')) as Role[];
+    const mapped = Array.from(all)
+      .map(toRoleName)
+      .filter((r): r is Role => !!r);
+    return mapped;
   } catch {
     return [];
   }
@@ -48,21 +60,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const manager = useMemo(getOidcManager, []);
   const [user, setUser] = useState<User | null>(null);
   const [demoRoles, setDemoRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState<boolean>(!!manager);
 
   // Initialize authentication state
   useEffect(() => {
-    if (!manager) {
-      // Demo mode: read roles from sessionStorage
+    let mounted = true;
+    async function init() {
+      if (!manager) {
+        // Demo mode: read roles from sessionStorage
+        try {
+          const raw = sessionStorage.getItem('demoRoles');
+          if (raw && mounted) setDemoRoles(JSON.parse(raw));
+        } catch {}
+        setLoading(false);
+        return;
+      }
       try {
-        const raw = sessionStorage.getItem('demoRoles');
-        if (raw) setDemoRoles(JSON.parse(raw));
-      } catch {}
-      return;
+        const existing = await manager.getUser();
+        if (mounted) {
+          if (existing && !existing.expired) {
+            setUser(existing);
+          } else if (window.location.search.includes('code=')) {
+            const u = await manager.signinRedirectCallback();
+            if (mounted) setUser(u);
+          }
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
     }
-    manager.getUser().then(existing => {
-      if (existing && !existing.expired) setUser(existing);
-      else if (window.location.search.includes('code=')) manager.signinRedirectCallback().then(u => setUser(u));
-    });
+    init();
+    return () => { mounted = false; };
   }, [manager]);
 
   // Keep axios token in sync
@@ -74,9 +102,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: manager ? !!user : demoRoles.length > 0,
     user,
     roles,
+    loading,
     login: () => { manager ? manager.signinRedirect() : (window.location.href = '/login'); },
     logout: () => { if (manager) manager.signoutRedirect(); setUser(null); sessionStorage.removeItem('demoRoles'); setDemoRoles([]); },
-  }), [user, manager, demoRoles, roles]);
+  }), [user, manager, demoRoles, roles, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

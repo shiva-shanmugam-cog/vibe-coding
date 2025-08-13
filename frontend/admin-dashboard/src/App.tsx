@@ -5,7 +5,6 @@ import LoginPage from '@/pages/LoginPage';
 import AgentsPage from '@/pages/AgentsPage';
 import PerformancePage from '@/pages/PerformancePage';
 import TracingPage from '@/pages/TracingPage';
-import SimulationPage from '@/pages/SimulationPage';
 import AuditLogsPage from '@/pages/AuditLogsPage';
 
 export default function App() {
@@ -22,18 +21,10 @@ export default function App() {
         }
       >
         <Route index element={<Navigate to="agents" replace />} />
-        <Route path="agents" element={<AgentsPage />} />
-        <Route path="performance" element={<PerformancePage />} />
-        <Route path="tracing" element={<TracingPage />} />
-        <Route
-          path="simulation"
-          element={
-            <ProtectedRoute allowRoles={["ROLE_CUSTOMER", "ROLE_ADMIN", "ROLE_AGENT"]}>
-              <SimulationPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="audit" element={<AuditLogsPage />} />
+        <Route path="agents" element={<ProtectedRoute allowRoles={["ROLE_ADMIN", "ROLE_AGENT"]}><AgentsPage /></ProtectedRoute>} />
+        <Route path="performance" element={<ProtectedRoute allowRoles={["ROLE_ADMIN"]}><PerformancePage /></ProtectedRoute>} />
+        <Route path="tracing" element={<ProtectedRoute allowRoles={["ROLE_ADMIN", "ROLE_AGENT"]}><TracingPage /></ProtectedRoute>} />
+        <Route path="audit" element={<ProtectedRoute allowRoles={["ROLE_ADMIN", "ROLE_AGENT"]}><AuditLogsPage /></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

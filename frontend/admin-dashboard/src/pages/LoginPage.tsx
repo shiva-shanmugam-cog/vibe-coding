@@ -2,12 +2,14 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, loading } = useAuth();
   const [role, setRole] = useState('ROLE_ADMIN');
 
   useEffect(() => {
-    if (isAuthenticated) window.location.replace('/');
-  }, [isAuthenticated]);
+    if (!loading && isAuthenticated) {
+      window.location.assign('/');
+    }
+  }, [isAuthenticated, loading]);
 
   const hasOidc = !!import.meta.env.VITE_OIDC_AUTHORITY;
 
@@ -16,7 +18,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-xl shadow p-6 space-y-4">
         <h1 className="text-xl font-semibold">Vibe Admin Dashboard</h1>
         {hasOidc ? (
-          <button onClick={login} className="w-full py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Login with SSO</button>
+          <div className="space-y-3">
+            <button onClick={login} className="w-full py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Login with SSO</button>
+            {loading && <div className="text-sm text-gray-500 text-center">Redirecting…</div>}
+          </div>
         ) : (
           <form onSubmit={(e) => { e.preventDefault(); sessionStorage.setItem('demoRoles', JSON.stringify([role])); window.location.href = '/'; }} className="space-y-3">
             <div>
