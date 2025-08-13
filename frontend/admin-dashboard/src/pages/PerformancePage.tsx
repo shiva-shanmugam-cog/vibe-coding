@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getAgentsMetrics, getPrometheusRaw, AgentsMetrics } from '@/services/api';
 import { parsePrometheusText, pickLatest } from '@/services/prometheus';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { env } from '@/config/env';
 
 export default function PerformancePage() {
   const [agents, setAgents] = useState<AgentsMetrics>({});
@@ -19,7 +20,7 @@ export default function PerformancePage() {
 
   useEffect(() => { load(); const t = setInterval(load, 5000); return () => clearInterval(t); }, []);
 
-  const grafanaUrl = (import.meta.env.VITE_GRAFANA_DASHBOARD_URL as string | undefined) || '';
+  const grafanaUrl = (env.VITE_GRAFANA_DASHBOARD_URL as string | undefined) || '';
 
   return (
     <div className="space-y-6">

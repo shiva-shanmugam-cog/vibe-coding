@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { connectEvents, EventMessage } from '@/services/events';
+import { env } from '@/config/env';
 
 const DEFAULT_TOPICS = ['agent.inbound', 'agent.outbound', 'agent.events', 'transactions.events'];
 
@@ -28,9 +29,9 @@ export default function TracingPage() {
         <div className={`text-sm ${connected ? 'text-green-700' : 'text-yellow-700'}`}>{connected ? 'Connected' : 'Connecting…'}</div>
       </div>
 
-      {!import.meta.env.VITE_EVENTS_WS_URL && (
+      {!env.VITE_EVENTS_WS_URL && (
         <div className="p-3 bg-yellow-50 text-yellow-800 border rounded">
-          Using default gateway SSE endpoint at /ws/events. Set VITE_EVENTS_WS_URL to override.
+          Using default gateway SSE endpoint at /ws/events. Set VITE_EVENTS_WS_URL via env.js to override.
         </div>
       )}
 

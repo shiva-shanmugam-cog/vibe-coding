@@ -1,0 +1,11 @@
+# dependencies
+node_modules
+
+# build outputs
+dist
+
+# env files
+.env*
+!/.env.example
+!/.env.production.sample
+!/.env.production.local.example 

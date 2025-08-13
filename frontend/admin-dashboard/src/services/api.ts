@@ -1,11 +1,9 @@
 import axios from 'axios';
 import { User } from 'oidc-client-ts';
+import { resolveApiBase, resolveAuditBase } from '@/config/env';
 
-const defaultGateway = `${window.location.protocol}//${window.location.hostname}:8080`;
-const defaultAudit = `${window.location.protocol}//${window.location.hostname}:8082`;
-
-const apiBase = import.meta.env.VITE_API_BASE_URL || defaultGateway;
-const auditBase = import.meta.env.VITE_AUDIT_BASE_URL || defaultAudit;
+const apiBase = resolveApiBase();
+const auditBase = resolveAuditBase();
 
 export const api = axios.create({ baseURL: apiBase, withCredentials: false, timeout: 15000 });
 export const auditApi = axios.create({ baseURL: auditBase, withCredentials: false, timeout: 15000 });
