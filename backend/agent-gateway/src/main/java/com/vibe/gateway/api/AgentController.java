@@ -4,6 +4,7 @@ import com.vibe.agentframework.AgentMessage;
 import com.vibe.agentframework.AgentResponse;
 import com.vibe.agentframework.ConversationContext;
 import com.vibe.gateway.service.AgentOrchestrator;
+import com.vibe.gateway.service.KafkaEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +15,11 @@ import java.util.concurrent.CompletableFuture;
 @RequestMapping("/api/agents")
 public class AgentController {
   private final AgentOrchestrator orchestrator;
+  private final KafkaEventPublisher eventPublisher;
 
-  public AgentController(AgentOrchestrator orchestrator) {
+  public AgentController(AgentOrchestrator orchestrator, KafkaEventPublisher eventPublisher) {
     this.orchestrator = orchestrator;
+    this.eventPublisher = eventPublisher;
   }
 
   @PostMapping("/message")
@@ -24,7 +27,21 @@ public class AgentController {
       @RequestBody AgentMessage message,
       @RequestHeader(value = "X-Conversation-Id", required = false) String conversationId) {
     ConversationContext ctx = new ConversationContext(conversationId, null);
-    return orchestrator.route(ctx, message).thenApply(ResponseEntity::ok);
+    eventPublisher.publishAgentInbound(message);
+    return orchestrator.route(ctx, message)
+      .thenApply(response -> {
+        // Publish outbound after processing
+        AgentMessage outbound = new AgentMessage(
+          message.getMessageId(),
+          message.getTargetAgentId(),
+          message.getActor(),
+          "response",
+          Map.of("status", response.getType().name(), "payload", response.getData()),
+          message.getTimestamp()
+        );
+        eventPublisher.publishAgentOutbound(outbound);
+        return ResponseEntity.ok(response);
+      });
   }
 
   @GetMapping("/metrics")
