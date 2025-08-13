@@ -10,4 +10,9 @@ Simulates customer onboarding and interactions with agents.
 ## Dev
 
 - `npm install`
-- `npm start` 
+- `npm run dev`
+
+### Environment variables (optional for OIDC)
+
+- `VITE_API_BASE_URL` (defaults to same origin)
+- `VITE_OIDC_AUTHORITY`, `VITE_OIDC_CLIENT_ID`, `VITE_OIDC_REDIRECT_URI` 
