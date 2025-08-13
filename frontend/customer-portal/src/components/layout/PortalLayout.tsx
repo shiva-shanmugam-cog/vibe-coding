@@ -13,8 +13,6 @@ export const PortalLayout: React.FC = () => {
 					<div className="flex items-center gap-3">
 						<NavLink className={({ isActive }: { isActive: boolean }) => linkClass(isActive)} to="/onboarding">Onboarding</NavLink>
 						<NavLink className={({ isActive }: { isActive: boolean }) => linkClass(isActive)} to="/messages">Messages</NavLink>
-						<NavLink className={({ isActive }: { isActive: boolean }) => linkClass(isActive)} to="/status">Status</NavLink>
-						<NavLink className={({ isActive }: { isActive: boolean }) => linkClass(isActive)} to="/metrics">Metrics</NavLink>
 						<button onClick={logout} className="px-3 py-1.5 rounded text-gray-700 hover:bg-gray-100">Logout</button>
 					</div>
 				</div>

@@ -12,7 +12,12 @@ function bearer() {
 	return currentUser?.access_token ? { Authorization: `Bearer ${currentUser.access_token}` } : {};
 }
 
-api.interceptors.request.use((cfg: InternalAxiosRequestConfig) => ({ ...cfg, headers: { ...cfg.headers, ...bearer() } }));
+api.interceptors.request.use((cfg: InternalAxiosRequestConfig) => {
+	const headers = (cfg.headers || {}) as any;
+	Object.assign(headers, bearer());
+	cfg.headers = headers;
+	return cfg;
+});
 
 export interface AgentMetricItem {
 	displayName: string;
@@ -33,10 +38,14 @@ export interface AgentMessageReq {
 	actor?: string;
 	type?: string;
 	payload?: Record<string, unknown>;
+	messageId?: string;
+	timestamp?: string;
 }
 
 export async function sendAgentMessage(message: AgentMessageReq, conversationId?: string) {
-	const res = await api.post('/api/agents/message', message, { headers: conversationId ? { 'X-Conversation-Id': conversationId } : {} });
+	const headers: Record<string, string> = { 'Content-Type': 'application/json' } as Record<string, string>;
+	if (conversationId) headers['X-Conversation-Id'] = conversationId;
+	const res = await api.post('/api/agents/message', message, { headers });
 	return res.data as any;
 }
 

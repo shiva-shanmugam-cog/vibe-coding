@@ -3,7 +3,7 @@ import { sendAgentMessage } from '@/services/api';
 import { connectEvents, EventMessage } from '@/services/events';
 
 export default function MessagesPage() {
-	const [targetAgentId, setTargetAgentId] = useState<string>('onboarding-agent');
+	const [targetAgentId, setTargetAgentId] = useState<string>('onboarding-assistant');
 	const [message, setMessage] = useState<string>('Hello');
 	const [conversationId, setConversationId] = useState<string | undefined>();
 	const [log, setLog] = useState<Array<{ dir: 'in' | 'out' | 'event'; payload: unknown }>>([]);
@@ -17,7 +17,7 @@ export default function MessagesPage() {
 	const onEvent = (msg: EventMessage) => {
 		try {
 			const payload = typeof msg.value === 'string' ? JSON.parse(msg.value) : (msg.value as any);
-			if (msg.topic === 'agent.outbound' && (!conversationId || payload?.conversationId === conversationId)) {
+			if (msg.topic === 'agent.outbound') {
 				setLog((prev) => [...prev, { dir: 'in', payload }]);
 			}
 			if (msg.topic === 'agent.events') {
@@ -27,9 +27,8 @@ export default function MessagesPage() {
 	};
 
 	const send = async () => {
-		const res = await sendAgentMessage({ targetAgentId, type: 'CUSTOMER_MESSAGE', payload: { text: message } }, conversationId);
-		setLog((prev) => [...prev, { dir: 'out', payload: { targetAgentId, text: message } }]);
-		setConversationId((res as any)?.conversationId || conversationId);
+		await sendAgentMessage({ targetAgentId, type: 'CUSTOMER_QUERY', payload: { intent: message } }, conversationId);
+		setLog((prev) => [...prev, { dir: 'out', payload: { targetAgentId, intent: message } }]);
 		setMessage('');
 	};
 
@@ -38,8 +37,8 @@ export default function MessagesPage() {
 			<section className="bg-white rounded shadow p-4 lg:col-span-1">
 				<h2 className="font-semibold mb-3">Compose</h2>
 				<select className="border rounded px-3 py-2 w-full mb-2" value={targetAgentId} onChange={e => setTargetAgentId(e.target.value)}>
-					<option value="onboarding-agent">Onboarding Agent</option>
-					<option value="fraud-detection-agent">Fraud Detection Agent</option>
+					<option value="onboarding-assistant">Onboarding Agent</option>
+					<option value="fraud-detection-engine">Fraud Detection Agent</option>
 				</select>
 				<textarea className="border rounded px-3 py-2 w-full h-32" value={message} onChange={e => setMessage(e.target.value)} placeholder="Type a message..." />
 				<button onClick={send} className="mt-3 bg-blue-600 text-white px-4 py-2 rounded">Send</button>

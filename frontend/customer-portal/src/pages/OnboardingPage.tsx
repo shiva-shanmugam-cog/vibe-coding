@@ -29,11 +29,11 @@ export default function OnboardingPage() {
 	const onInboundEvent = (msg: EventMessage) => {
 		try {
 			const value = typeof msg.value === 'string' ? JSON.parse(msg.value) : (msg.value as any);
-			if (msg.topic === 'agent.outbound' && value?.conversationId === conversationId) {
-				const type = value?.type || value?.responseType;
-				if (type === 'APPROVED') updateProgress('review', true, 'APPROVED');
-				else if (type === 'SECURITY_ALERT') updateProgress('review', false, 'FRAUD_ALERT');
-				else if (type === 'ERROR') updateProgress('review', false, 'REJECTED');
+			if (msg.topic === 'agent.outbound') {
+				const status = (value as any)?.payload?.status || (value as any)?.status || (value as any)?.responseType;
+				if (status === 'APPROVED') updateProgress('review', true, 'APPROVED');
+				else if (status === 'SECURITY_ALERT') updateProgress('review', false, 'FRAUD_ALERT');
+				else if (status === 'ERROR') updateProgress('review', false, 'REJECTED');
 			}
 			if (msg.topic === 'transactions.events') {
 				if ((value as any)?.eventType === 'FRAUD_CHECK_STARTED') updateProgress('review', false, 'PENDING_REVIEW');
@@ -52,7 +52,7 @@ export default function OnboardingPage() {
 
 	const startOnboarding = async () => {
 		const res = await sendAgentMessage({
-			targetAgentId: 'onboarding-agent',
+			targetAgentId: 'onboarding-assistant',
 			actor: email,
 			type: 'ONBOARDING_START',
 			payload: { fullName, email }
@@ -64,14 +64,14 @@ export default function OnboardingPage() {
 	const uploadDocument = async () => {
 		if (!file) return;
 		await sendAgentMessage({
-			targetAgentId: 'onboarding-agent',
+			targetAgentId: 'onboarding-assistant',
 			actor: email,
 			type: 'DOCUMENT_UPLOADED',
 			payload: { documentKey: file.name, mimeType: file.type, size: file.size }
 		}, conversationId);
 		updateProgress('document', true, 'PENDING_REVIEW');
 		await sendAgentMessage({
-			targetAgentId: 'fraud-detection-agent',
+			targetAgentId: 'fraud-detection-engine',
 			actor: email,
 			type: 'FRAUD_CHECK_REQUEST',
 			payload: { email, amount: 0, source: 'onboarding' }
