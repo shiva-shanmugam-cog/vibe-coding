@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: onboarding-agent
+  labels:
+    app: onboarding-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onboarding-agent
+  template:
+    metadata:
+      labels:
+        app: onboarding-agent
+    spec:
+      containers:
+        - name: app
+          image: <ACR_NAME>.azurecr.io/onboarding-agent:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onboarding-agent
+  labels:
+    app: onboarding-agent
+spec:
+  type: ClusterIP
+  selector:
+    app: onboarding-agent
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081 

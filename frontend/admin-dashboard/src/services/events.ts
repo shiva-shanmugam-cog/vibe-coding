@@ -13,9 +13,10 @@ export type EventsClientOptions = {
   onError?: (err: any) => void;
 };
 
+import { resolveEventsUrl } from '@/config/env';
+
 export function connectEvents({ url, topics, onMessage, onError }: EventsClientOptions) {
-  const defaultSse = `${window.location.protocol}//${window.location.hostname}:8080/ws/events`;
-  const targetUrl = url || (import.meta.env.VITE_EVENTS_WS_URL as string) || defaultSse;
+  const targetUrl = url || resolveEventsUrl();
   if (targetUrl.startsWith('ws')) {
     const ws = new WebSocket(targetUrl + '?topics=' + encodeURIComponent(topics.join(',')));
     ws.onmessage = ev => {

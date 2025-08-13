@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { auditApi } from '@/services/api';
+import { resolveAuditBase } from '@/config/env';
 
 interface AuditEvent { id?: string; actor?: string; action?: string; resource?: string; timestamp?: string; details?: Record<string, unknown>; }
 
@@ -31,12 +32,14 @@ export default function AuditLogsPage() {
     return new Blob([lines.join('\n')], { type: 'text/csv' });
   }, [rows]);
 
+  const base = resolveAuditBase();
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Audit Logs</h2>
-        {import.meta.env.VITE_AUDIT_BASE_URL && (
-          <div className="text-xs text-gray-500">{import.meta.env.VITE_AUDIT_BASE_URL}</div>
+        {base && (
+          <div className="text-xs text-gray-500">{base}</div>
         )}
       </div>
 

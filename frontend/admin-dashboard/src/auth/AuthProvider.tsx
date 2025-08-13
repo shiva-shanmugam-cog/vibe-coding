@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { User, UserManager, WebStorageStateStore } from 'oidc-client-ts';
 import { setAuthUser } from '@/services/api';
+import { env } from '@/config/env';
 
 export type Role = 'ROLE_ADMIN' | 'ROLE_AGENT' | 'ROLE_CUSTOMER';
 
@@ -16,9 +17,10 @@ interface AuthContextShape {
 const AuthContext = createContext<AuthContextShape | undefined>(undefined);
 
 function getOidcManager(): UserManager | null {
-  const authority = import.meta.env.VITE_OIDC_AUTHORITY as string | undefined;
-  const client_id = import.meta.env.VITE_OIDC_CLIENT_ID as string | undefined;
-  const redirect_uri = import.meta.env.VITE_OIDC_REDIRECT_URI as string | undefined;
+  const authority = (env.VITE_OIDC_AUTHORITY as string | undefined);
+  const client_id = (env.VITE_OIDC_CLIENT_ID as string | undefined);
+  const redirect_uri = (env.VITE_OIDC_REDIRECT_URI as string | undefined);
+  const silent_redirect_uri = (env as any).VITE_OIDC_SILENT_REDIRECT_URI as string | undefined;
   if (!authority || !client_id || !redirect_uri) return null;
   return new UserManager({
     authority,
@@ -28,6 +30,8 @@ function getOidcManager(): UserManager | null {
     scope: 'openid profile email',
     userStore: new WebStorageStateStore({ store: window.sessionStorage }),
     loadUserInfo: true,
+    automaticSilentRenew: true,
+    silent_redirect_uri: silent_redirect_uri || (window.location.origin + '/silent-oidc.html'),
   });
 }
 
@@ -91,6 +95,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     init();
     return () => { mounted = false; };
+  }, [manager]);
+
+  // Refresh user on token events
+  useEffect(() => {
+    if (!manager) return;
+    const onUserLoaded = (u: User) => setUser(u);
+    const onAccessTokenExpired = async () => {
+      try { const u = await manager.signinSilent(); setUser(u); } catch { /* ignore */ }
+    };
+    manager.events.addUserLoaded(onUserLoaded);
+    manager.events.addAccessTokenExpired(onAccessTokenExpired);
+    return () => {
+      manager.events.removeUserLoaded(onUserLoaded);
+      manager.events.removeAccessTokenExpired(onAccessTokenExpired);
+    };
   }, [manager]);
 
   // Keep axios token in sync

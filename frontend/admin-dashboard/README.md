@@ -53,3 +53,33 @@ VITE_OIDC_REDIRECT_URI=http://localhost:5173
 ## Build
 
 - `npm run build` → output in `dist/` 
+
+## Production Build & Runtime Env
+
+- Build: `npm run build`
+- Runtime env: values are injected via `/env.js` at runtime. In Kubernetes, mount a ConfigMap to `/usr/share/nginx/html/env.js` to override.
+
+## Docker
+
+```bash
+# build
+docker build -t admin-dashboard:latest .
+# run
+docker run -p 8088:80 -e PORT=80 admin-dashboard:latest
+```
+
+## Kubernetes (AKS)
+
+- Image: push to ACR `<ACR_NAME>.azurecr.io/admin-dashboard:latest`
+- Apply manifests:
+```bash
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
+```
+- Update `k8s/deployment.yaml` image and `k8s/ingress.yaml` host.
+
+## OIDC
+
+- Set `VITE_OIDC_AUTHORITY`, `VITE_OIDC_CLIENT_ID`, `VITE_OIDC_REDIRECT_URI` via env.js ConfigMap.
+- Silent renew handled by `/silent-oidc.html`. 

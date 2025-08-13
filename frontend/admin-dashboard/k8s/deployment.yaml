@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-dashboard
+  labels:
+    app: admin-dashboard
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: admin-dashboard
+  template:
+    metadata:
+      labels:
+        app: admin-dashboard
+    spec:
+      containers:
+        - name: web
+          image: <ACR_NAME>.azurecr.io/admin-dashboard:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: env-config
+              mountPath: /usr/share/nginx/html/env.js
+              subPath: env.js
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      volumes:
+        - name: env-config
+          configMap:
+            name: admin-dashboard-env
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: admin-dashboard-env
+  labels:
+    app: admin-dashboard
+data:
+  env.js: |
+    window.__ENV__ = {
+      VITE_API_BASE_URL: "https://gateway.yourdomain.com",
+      VITE_AUDIT_BASE_URL: "https://audit.yourdomain.com",
+      VITE_EVENTS_WS_URL: "https://gateway.yourdomain.com/ws/events",
+      VITE_OIDC_AUTHORITY: "https://login.yourdomain.com/realms/demo",
+      VITE_OIDC_CLIENT_ID: "vibe-admin",
+      VITE_OIDC_REDIRECT_URI: "https://admin.yourdomain.com/login",
+      VITE_GRAFANA_DASHBOARD_URL: "https://grafana.yourdomain.com/d/abcd1234/vibe-overview?orgId=1&kiosk"
+    } 
