@@ -7,8 +7,8 @@ const defaultAudit = `${window.location.protocol}//${window.location.hostname}:8
 const apiBase = import.meta.env.VITE_API_BASE_URL || defaultGateway;
 const auditBase = import.meta.env.VITE_AUDIT_BASE_URL || defaultAudit;
 
-export const api = axios.create({ baseURL: apiBase });
-export const auditApi = axios.create({ baseURL: auditBase });
+export const api = axios.create({ baseURL: apiBase, withCredentials: false, timeout: 15000 });
+export const auditApi = axios.create({ baseURL: auditBase, withCredentials: false, timeout: 15000 });
 
 let currentUser: User | null = null;
 export function setAuthUser(user: User | null) { currentUser = user; }
@@ -34,6 +34,21 @@ auditApi.interceptors.request.use(cfg => {
   }
   return cfg;
 });
+
+function toReadableError(err: any): string {
+  if (err?.response) {
+    const status = err.response.status;
+    const text = typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data);
+    return `HTTP ${status}: ${text}`;
+  }
+  if (err?.request) {
+    return 'Network error: request made but no response received';
+  }
+  return err?.message || 'Unknown error';
+}
+
+api.interceptors.response.use(r => r, (err) => Promise.reject(new Error(toReadableError(err))));
+auditApi.interceptors.response.use(r => r, (err) => Promise.reject(new Error(toReadableError(err))));
 
 export interface AgentMetricItem {
   displayName: string;
